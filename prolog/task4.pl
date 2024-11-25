@@ -1,64 +1,39 @@
-% Факты о дорогах
 a(ньюкасл, карлайл, 58).
+a(карлайл, ньюкасл, 58).
 a(карлайл, пенрит, 23).
+a(пенрит, карлайл, 23). 
 a(дарлингтон, ньюкасл, 40).
+a(ньюкасл, дарлингтон, 40).
 a(пенрит, дарлингтон, 52).
+a(дарлингтон, пенрит, 52). 
 a(уэркингтон, карлайл, 33).
+a(карлайл, уэркингтон, 33). 
 a(уэркингтон, пенрит, 39).
-a(городБ, городА, 15).
-a(городБ, городВ, 10).
-a(уэркингтон, городВ, 5).
-a(дарлингтон, городА, 25).
+a(пенрит, уэркингтон, 39). 
 
-переход(Старт, Цель, Путь) :-
-    переход3([г(0,[Старт])], Цель, R),
-    обр(R, Путь).
-переход3(Пути, Цель, Путь) :-
-	кратчайший(Пути,Кратчайший,ОстПути),
-	продлить(Кратчайший,Цель,ОстПути,Путь).
-продлить(г(Расст,Путь), Цель, _, Путь) :-
-    Путь = [Цель | _].
-продлить(г(Расст,[Послед|Бывали]), Цель, Пути, Путь) :-
-    найтивсе(
-        г(D1,[Z,Послед|Бывали]),
-        следузел(Послед, Бывали,Z,Расст,D1),
-        Список),
-    присоединить(Список, Пути, НовПути),
-    переход3(НовПути, Цель, Пути).   
-кратчайший([Путь|Пути], Кратчайший,[Путь|Ост]) :-
-    кратчайший(Пути, Кратчайший,Oст),
-    короче(Кратчайший,Путь),
-    !.
-кратчайший([Путь|Ост], Путь,Oст).
+path(Start, End, Path, TotalDistance) :-
+  path_helper(Start, End, [Start], 0, Path, TotalDistance).
 
-короче(г(M1,_), г(M2,_)) :- M1 < M2.
-следузел(X,Бывали,Y,Расст,НовРасст) :-
-    (a(X,Y,Z); a(Y,X,Z)),
-    not(принадлежит(Y,Бывали)),
-    НовРасст is Расст + Z.
 
-обр([], []).
-обр([H|T], L) :- обр(T,Z), присоединить(Z,[H],L).
+path_helper(Current, End, Visited, CurrentDistance, [End|Visited], TotalDistance) :-
+  a(Current, End, Distance),
+  TotalDistance is CurrentDistance + Distance.
 
-принадлежит(E1,Список) :- присоединить(_, [E1|_], Список).
 
-присоединить([], L,L).
-присоединить([X|L1], L2,[X|L3]) :- присоединить(L1,L2,L3).
+path_helper(Current, End, Visited, CurrentDistance, Path, TotalDistance) :-
+  a(Current, Next, Distance),
+  \+ member(Next, Visited), % Avoid cycles
+  NewDistance is CurrentDistance + Distance,
+  path_helper(Next, End, [Next|Visited], NewDistance, Path, TotalDistance).
 
-найтивсе(X,G,_):-
-    asserta(найдено(маркер)),
-    call(G),
-    asserta(найдено(X)),
-    fail.
-найтивсе(_,_,L):-
-    собрать_найденное([],M), !,
-    L=M.
 
-собрать_найденное(S,L):-
-    взятьеще(X),!,
-    собрать_найденное([X|S],L).
-собрать_найденное(L,L).
+find_paths(Start, End) :-
+  findall((Path, TotalDistance), path(Start, End, Path, TotalDistance), Paths),
+  sort(Paths, SortedPaths), % Sort by TotalDistance
+  write('Paths from '), write(Start), write(' to '), write(End), nl,
+  print_paths(SortedPaths).
 
-взятьеще(X):-
-    retract(найдено(X)),!, X\==маркер.
-
+print_paths([]).
+print_paths([(Path, TotalDistance)|Rest]) :-
+  write('Path: '), write(Path), write(', Total Distance: '), write(TotalDistance), nl,
+  print_paths(Rest).
